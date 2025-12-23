@@ -1,5 +1,7 @@
 package com.orderflow.api.service;
 
+import com.orderflow.api.exception.BusinessException;
+import com.orderflow.api.exception.ResourceNotFoundException;
 import com.orderflow.api.model.dto.OrderItemRequestDTO;
 import com.orderflow.api.model.dto.OrderItemResponseDTO;
 import com.orderflow.api.model.dto.OrderRequestDTO;
@@ -30,7 +32,7 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO create(OrderRequestDTO request) {
         Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + request.getCustomerId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", request.getCustomerId()));
 
         Order order = Order.builder()
                 .customer(customer)
@@ -56,7 +58,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderResponseDTO findById(Long id) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Order", id));
         return mapToResponseDTO(order);
     }
 
@@ -81,7 +83,7 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO updateStatus(Long id, OrderStatus newStatus) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Order", id));
 
         validateStatusTransition(order.getStatus(), newStatus);
         order.setStatus(newStatus);
@@ -93,18 +95,18 @@ public class OrderService {
     @Transactional
     public void delete(Long id) {
         if (!orderRepository.existsById(id)) {
-            throw new RuntimeException("Order not found with id: " + id);
+            throw new ResourceNotFoundException("Order", id);
         }
         orderRepository.deleteById(id);
     }
 
     private void validateStatusTransition(OrderStatus currentStatus, OrderStatus newStatus) {
         if (currentStatus == OrderStatus.COMPLETED) {
-            throw new RuntimeException("Cannot change status of completed order");
+            throw new BusinessException("Cannot change status of completed order");
         }
 
         if (currentStatus == OrderStatus.CREATED && newStatus == OrderStatus.COMPLETED) {
-            throw new RuntimeException("Order must be in PROCESSING status before completion");
+            throw new BusinessException("Order must be in PROCESSING status before completion");
         }
     }
 
