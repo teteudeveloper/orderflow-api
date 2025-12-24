@@ -15,6 +15,7 @@ services:
       retries: 5
 
   api:
+    build: .
     image: orderflow-api:latest
     container_name: orderflow-api
     depends_on:
@@ -22,8 +23,5 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/orderflow
-      SPRING_DATASOURCE_USERNAME: orderflow
-      SPRING_DATASOURCE_PASSWORD: orderflow
     ports:
       - "8080:8080"
