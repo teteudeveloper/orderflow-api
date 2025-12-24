@@ -36,7 +36,7 @@ public class CustomerService {
     @Transactional(readOnly = true)
     public CustomerResponseDTO findById(Long id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
         return mapToResponseDTO(customer);
     }
 
@@ -55,7 +55,7 @@ public class CustomerService {
     @Transactional
     public CustomerResponseDTO update(Long id, CustomerRequestDTO request) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
 
         validateUniqueConstraints(request.getEmail(), request.getDocumentNumber(), id);
 
@@ -71,21 +71,22 @@ public class CustomerService {
     @Transactional
     public void delete(Long id) {
         if (!customerRepository.existsById(id)) {
-            throw new RuntimeException("Customer not found with id: " + id);
+            throw new ResourceNotFoundException("Customer", id);
         }
         customerRepository.deleteById(id);
     }
 
     private void validateUniqueConstraints(String email, String documentNumber, Long excludeId) {
+
         customerRepository.findByEmail(email).ifPresent(existing -> {
             if (excludeId == null || !existing.getId().equals(excludeId)) {
-                throw new RuntimeException("Email already in use: " + email);
+                throw new BusinessException("Email already in use");
             }
         });
 
         customerRepository.findByDocumentNumber(documentNumber).ifPresent(existing -> {
             if (excludeId == null || !existing.getId().equals(excludeId)) {
-                throw new RuntimeException("Document number already in use: " + documentNumber);
+                throw new BusinessException("Document number already in use");
             }
         });
     }
